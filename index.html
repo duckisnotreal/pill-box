@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smart Pill Box 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: clinical, calm, precise — a product showcase for a student medical device.
+   IDEA: a product-engineering turntable: the white pill box on a studio sweep, then x-ray it.
+   PICTURE: the live 3D box fills the first screen; walls fade to reveal tubes, chute and drawers.
+   COLOUR and TYPE: white body, medical red cross as the one accent, dose colours on drawers; Figtree.
+   LAYOUT: big stage with controls docked inside; steps + parts panel right, stacks on phones. */
+:root{color-scheme:light dark;--bg:light-dark(#e9edf0,#10161b);--panel:light-dark(#ffffff,#18212a);--ink:light-dark(#14202a,#e8eef2);--mute:light-dark(#5b6b78,#9db0bf);--line:light-dark(#d6dde3,#2a3743);--red:#d7261e;--cyan:#0d8fb8;--sweep1:light-dark(#ffffff,#25313c);--sweep2:light-dark(#dfe5ea,#0e1419)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+header{padding:22px max(4vw,16px) 14px;display:flex;flex-wrap:wrap;align-items:end;gap:6px 24px}
+h1{font-size:clamp(26px,3.4vw,40px);line-height:1.05;margin:0;font-weight:800;text-wrap:balance;display:flex;align-items:center;gap:12px}
+h1 i{width:.8em;height:.8em;flex:none;background:linear-gradient(var(--red),var(--red)) center/100% 32% no-repeat,linear-gradient(var(--red),var(--red)) center/32% 100% no-repeat}
+header p{margin:0;color:var(--mute);max-width:66ch}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0 max(4vw,16px) 32px}
+.stage{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 0px;transition:grid-template-columns .45s ease,grid-template-rows .45s ease,height .45s ease;height:clamp(440px,72vh,820px);border-radius:18px;overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,var(--sweep1),var(--sweep2));border:1px solid var(--line)}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+#cv:active{cursor:grabbing}
+.bar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+button{font:600 16px/1 Figtree,system-ui,sans-serif;min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+button:disabled{opacity:.55;cursor:default}
+#show[aria-pressed=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+#op{background:var(--red);border-color:var(--red);color:#fff}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;border-radius:0;padding:0 12px}
+.seg button[aria-pressed=true]{background:var(--cyan);color:#fff}
+.cap{position:absolute;left:12px;top:12px;max-width:min(380px,calc(100% - 24px));background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px #0002;transition:opacity .3s}
+.cap b{display:block;font-size:18px;line-height:1.2}
+.cap small{color:var(--mute);font-size:14px;line-height:1.4;display:block;margin-top:2px}
+.cap[hidden]{display:block;opacity:0;pointer-events:none}
+.stage.split{grid-template-columns:minmax(0,1fr) 320px}
+.view{position:relative;min-height:0;height:100%}
+.stage.split .hint{display:none}
+.side{overflow:hidden;position:relative;border-left:1px solid var(--line);background:light-dark(#eef2f5,#0f151a)}
+#ph[aria-pressed=true]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.phone{width:252px;height:510px;flex:none;border-radius:38px;background:#0e1114;padding:9px;box-shadow:0 18px 40px #0004;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);transform-origin:center}
+.screen{position:relative;height:100%;border-radius:30px;overflow:hidden;background:#f3f5f7;color:#14202a;font:13px/1.35 Figtree,system-ui,sans-serif}
+.sbar{display:flex;justify-content:space-between;padding:10px 20px 4px;font-weight:600;font-size:12px}
+.app{padding:6px 14px}
+.ah{display:flex;gap:10px;align-items:center;margin:4px 0 10px}
+.ah i,.nh i{width:30px;height:30px;border-radius:9px;flex:none;background:linear-gradient(#fff,#fff) center/62% 22% no-repeat,linear-gradient(#fff,#fff) center/22% 62% no-repeat,#d7261e}
+.nh i{width:20px;height:20px;border-radius:6px}
+.ah b{display:block;font-size:16px}.ah small{color:#5b6b78;font-size:12px}
+.pstat{border-radius:16px;padding:12px;color:#fff;background:#3b6f8f;transition:background .3s}
+.pstat b{display:block;font-size:16px;line-height:1.2}.pstat small{opacity:.9;font-size:12px}
+.pstat.alert{background:#c97a12}.pstat.ok{background:#1f8a4c}
+.app h3{font-size:12px;color:#5b6b78;margin:12px 0 6px;font-weight:600}
+.pd{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;background:#fff;border-radius:12px;padding:9px 10px;margin-bottom:6px}
+.pd i{width:10px;height:28px;border-radius:4px}.pd em{font-style:normal;font-size:12px;color:#5b6b78;white-space:nowrap}.pd em.ok{color:#1f8a4c;font-weight:600}.pd em.due{color:#c97a12;font-weight:600}
+.stock{display:flex;gap:6px}.stock span{flex:1;background:#fff;border-radius:12px;padding:8px 10px;font-size:12px}.stock b{font-size:15px}
+.notif{position:absolute;left:8px;right:8px;top:28px;z-index:2;background:#ffffffee;border-radius:18px;padding:10px 12px;box-shadow:0 10px 26px #0003;transform:translateY(-150%);transition:transform .45s cubic-bezier(.2,.9,.3,1.1)}
+.notif.on{transform:none}
+.nh{display:flex;gap:8px;align-items:center;font-size:12px}
+.notif p{margin:6px 0 0;font-size:13px}
+.na{display:flex;gap:6px;margin-top:8px}.na:empty{display:none}.na span{flex:1;text-align:center;background:#e9eef2;border-radius:10px;padding:7px 4px;font-weight:600;font-size:12px}.na span:first-child{background:#1f8a4c;color:#fff}
+.zoom{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel);box-shadow:0 6px 18px #0002}
+.zoom button{border:0;border-radius:0;width:44px;padding:0;font-size:24px;font-weight:600}
+.zoom button+button{border-top:1px solid var(--line)}
+.hint{position:absolute;right:14px;bottom:70px;color:var(--mute);font-size:13px}
+#tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--panel);font-size:13px;line-height:1.4;padding:8px 11px;border-radius:10px;max-width:250px;transform:translate(14px,14px);display:none;box-shadow:0 6px 18px #0003}
+#tip b{display:block;font-size:14px}
+aside{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.card h2{font-size:18px;margin:0 0 8px;line-height:1.2}
+ol{margin:0;padding:0;list-style:none;counter-reset:s}
+ol li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:8px;padding:5px 0;color:var(--mute);font-size:15px;line-height:1.35}
+ol li::before{content:counter(s);width:24px;height:24px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:600}
+ol li.on{color:var(--ink);font-weight:600}
+ol li.on::before{background:var(--red);border-color:var(--red);color:#fff}
+ol li.done::before{background:var(--line)}
+.parts{display:flex;flex-direction:column;max-height:440px;overflow:auto;margin:0 -6px}
+.parts button{all:unset;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px;border-radius:10px;font-size:15px;line-height:1.3}
+.parts button:hover,.parts button.sel{background:light-dark(#eef3f6,#22303b)}
+.parts button:focus-visible{outline:3px solid var(--cyan)}
+.parts em{font-style:normal;color:var(--mute);font-size:14px}
+.grp{font-size:13px;color:var(--mute);padding:10px 8px 2px;font-weight:600}
+#info{font-size:15px;color:var(--mute);margin:10px 0 0;min-height:3em}
+#info b{color:var(--ink)}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.stage{height:clamp(400px,66vh,640px)}.parts{max-height:none}}
+@media(max-width:700px){.stage{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 0px}.stage.split{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 340px;height:calc(clamp(400px,66vh,640px) + 340px)}.side{border-left:0;border-top:1px solid var(--line)}}
+@media(max-width:600px){.hint{display:none}.bar{left:8px;right:8px;bottom:8px;gap:6px}button{padding:0 12px;font-size:15px}.cap{top:8px;left:8px}}
+@media(prefers-reduced-motion:reduce){.cap,.stage,.notif{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1><i></i>Smart pill box</h1>
+  <p>Drag to orbit; zoom with the + and − buttons, scroll or pinch; hover any part to see what it does. Showcase hides the shell; Operate runs one dose.</p>
+</header>
+<main>
+  <section class="stage" id="stage">
+    <div class="view" id="view">
+    <canvas id="cv" aria-label="3D model of the smart pill box"></canvas>
+    <div class="cap" id="cap" hidden><b id="capT"></b><small id="capD"></small></div>
+    <div class="hint">Hover or tap a part to see what it does</div>
+    <div id="tip"></div>
+    <div class="zoom" role="group" aria-label="Zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
+    <div class="bar">
+      <button id="show" aria-pressed="false">Showcase</button>
+      <div class="seg" role="group" aria-label="Dose to run"><button data-d="0" aria-pressed="true">Morning</button><button data-d="1" aria-pressed="false">Noon</button><button data-d="2" aria-pressed="false">Evening</button></div>
+      <button id="op">Operate</button>
+      <button id="reset">Reset view</button>
+      <button id="ph" aria-pressed="false">Phone</button>
+    </div>
+    </div>
+    <div class="side" id="side" aria-label="Phone app view">
+      <div class="phone" id="phone"><div class="screen">
+        <div class="sbar"><span id="pTime">06:58</span><span>5G &middot; 92%</span></div>
+        <div class="notif" id="pNotif"><div class="nh"><i></i><b id="pNT"></b></div><p id="pNB"></p><div class="na" id="pNA"></div></div>
+        <div class="app">
+          <div class="ah"><i></i><div><b>Pill Box</b><small>Box online &middot; battery 92%</small></div></div>
+          <div class="pstat info" id="pStat"><b id="pStatT">Next dose: Morning 07:00</b><small id="pStatS">All pills loaded</small></div>
+          <h3>Today</h3>
+          <div id="pDoses"></div>
+          <h3>Pills left in the box</h3>
+          <div class="stock" id="pStock"></div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+  <aside>
+    <div class="card">
+      <h2>How one dose works</h2>
+      <ol id="steps"></ol>
+    </div>
+    <div class="card">
+      <h2>Parts inside</h2>
+      <div class="parts" id="parts"></div>
+      <p id="info">Pick a part to highlight it in the model.</p>
+      <p class="note">Box about 25 × 18 × 15 cm. Part models are representative shapes, not exact replicas.</p>
+    </div>
+  </aside>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const stage=$('#stage'),view=$('#view'),cv=$('#cv');
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;R.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(34,1,.01,10);
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a93a0,.8));
+const sun=new THREE.DirectionalLight(0xffffff,.8);sun.position.set(.5,1,.75);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-.35,right:.35,top:.35,bottom:-.35,near:.1,far:3});sun.shadow.bias=-.0004;scene.add(sun);
+const fill=new THREE.DirectionalLight(0xdfe8ff,.4);fill.position.set(-.8,.5,-.5);scene.add(fill);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(4,4),new THREE.ShadowMaterial({opacity:.16}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+const std=(c,r=.5,m=0,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m,...o});
+const glass=(c,o=.35)=>std(c,.15,0,{transparent:true,opacity:o,depthWrite:false});
+const shellMat=std(0xf5f6f3,.32),crossMat=std(0xd7261e,.42);
+const edgeMat=new THREE.LineBasicMaterial({color:0x4d6575,transparent:true,opacity:0});
+const alu=std(0xb8c0c8,.35,.75),black=std(0x1d2126,.55,.1),pcbG=std(0x1f6b3a,.6),pcbB=std(0x1c4fa0,.6),pcbK=std(0x23272c,.6),
+ petg=std(0xf0f0ec,.5),srvBlue=std(0x2a5fd0,.45),mica=glass(0xcfd8de,.3),silver=std(0xc8ccd0,.35,.8);
+
+/* parts registry */
+const P={},order=[];
+const def=(k,name,qty,grp,desc)=>{P[k]={k,name,qty,grp,desc,meshes:[]};order.push(k)};
+def('esp','ESP32-S3 controller',1,'Electronics','The brain: keeps the schedule, runs every motor and sensor, and sends alerts over Wi-Fi.');
+def('rtc','DS3231 real-time clock',1,'Electronics','Keeps exact time with its own coin cell and wakes the controller at each dose.');
+def('radar','Infrared sensor',1,'Electronics','Switches on when a dose is ready. When a hand comes up to it, it triggers and the drawer opens.');
+def('irc','IR pill counter',1,'Electronics','An infrared beam under the funnel counts every pill that falls through.');
+def('pinch','Anti-pinch IR beams',3,'Electronics','A beam across each drawer mouth; if a hand is in the way the drawer stops and reopens.');
+def('uln','ULN2003 stepper drivers',2,'Electronics','Power the four small stepper motors under the pill tubes.');
+def('status','Status LED',1,'Electronics','Blinks when a dose is due, stays green when the dose is ready.');
+def('buzzer','Buzzer',1,'Electronics','Beeps the reminder at dose time, even without Wi-Fi.');
+def('batt','2 × 18650 batteries',1,'Power','Run the whole box, so reminders keep working during a power cut (about 3 weeks).');
+def('charger','CN3791 charger board',1,'Power','Charges the batteries from the USB-C supply.');
+def('usbc','USB-C power port',1,'Power','Mains power in through a 5 V USB-C charger.');
+def('tubes','Pill tubes A and B',2,'Mechanics','One colour-coded tube per medicine, filled with 7 days of tablets.');
+def('disc','Dispensing discs',2,'Mechanics','6-pocket disc under each tube; every 60° turn drops exactly one pill.');
+def('stepper','28BYJ-48 stepper motors',2,'Mechanics','Turn each dispensing disc in precise 60° steps.');
+def('funnel','Collecting gutter + funnel',1,'Mechanics','Gathers pills from both tubes into one outlet.');
+def('chute','Diverter chute',1,'Mechanics','Swings to send the pills into the Morning, Noon or Evening drawer.');
+def('chuteServo','Diverter servo MG90S',1,'Mechanics','Turns the chute toward the right drawer.');
+def('drawerServo','Drawer servos MG90S',3,'Mechanics','Push each drawer out and pull it back in.');
+def('rack','Racks + pinions',3,'Mechanics','3D-printed gear rack under each drawer turns servo rotation into sliding.');
+def('limit','Limit switches',6,'Mechanics','Two per drawer: tell the controller when it is fully open or fully closed.');
+def('drawers','Morning / Noon / Evening drawers',3,'Body','Yellow, orange and blue dose drawers that slide out on their own.');
+def('shelf','Tube shelf',1,'Body','Clear acrylic shelf holding the tubes and motors.');
+def('wiring','Wiring',1,'Body','Signal, motor and power leads to the controller.');
+def('shell','Box shell',1,'Body','White laser-cut acrylic body with the red cross. Hidden in Showcase.');
+def('hand','User\'s hand',null,'Demo','Shown during Operate: reaches to the infrared sensor, then takes the pills. Not part of the product.');
+const tag=(o,k)=>o.traverse(m=>{if(m.isMesh){m.userData.part=k;P[k].meshes.push(m)}});
+function box(w,h,d,mat,x,y,z,par,k){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=!mat.transparent;par.add(m);if(k)tag(m,k);return m}
+function cyl(r,l,mat,x,y,z,ax,par,k,seg=24,r2){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r2??r,l,seg),mat);if(ax==='z')m.rotation.x=Math.PI/2;if(ax==='x')m.rotation.z=Math.PI/2;m.position.set(x,y,z);m.castShadow=!mat.transparent;par.add(m);if(k)tag(m,k);return m}
+function edgesOf(m,par){const e=new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry),edgeMat);e.position.copy(m.position);e.rotation.copy(m.rotation);par.add(e)}
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+
+/* dimensions (metres): 25 wide, 15 tall, 18 deep */
+const W=.25,H=.15,D=.18,T=.004,FZ=D/2,root=new THREE.Group();scene.add(root);
+const shellParts=[],extras=[];
+function sh(w,h,d,x,y,z,mat=shellMat){const m=box(w,h,d,mat,x,y,z,root,'shell');shellParts.push(m);if(mat===shellMat)edgesOf(m,root);return m}
+sh(T,H-T,D,-W/2+T/2,(H-T)/2,0);sh(T,H-T,D,W/2-T/2,(H-T)/2,0);sh(W,T,D,0,T/2,0);sh(W-2*T,H-T,T,0,(H-T)/2,-D/2+T/2);
+sh(W+.004,T,D+.004,0,H-T/2,0); // lid
+const XD=[-.065,0,.065],DW=.06,DH=.048,DY=.012;
+// front panel built around the three drawer openings
+sh(W-2*T,H-T-DY-DH,T,0,DY+DH+(H-T-DY-DH)/2,FZ-T/2);sh(W-2*T,DY-T,T,0,T+(DY-T)/2,FZ-T/2);
+const sideW=(W-2*T)/2-(.065+DW/2);[-1,1].forEach(s=>sh(sideW,DH,T,s*((W-2*T)/2-sideW/2),DY+DH/2,FZ-T/2));
+[-1,1].forEach(s=>sh(.065-DW,DH,T,s*.0325,DY+DH/2,FZ-T/2));
+[[.028,.008,.002,-.085,.112,FZ+.001],[.008,.028,.002,-.085,.112,FZ+.001],[.06,.002,.018,0,H+.001,0],[.018,.002,.06,0,H+.001,0],
+ [.002,.05,.014,-W/2-.001,.08,0],[.002,.014,.05,-W/2-.001,.08,0],[.002,.05,.014,W/2+.001,.08,0],[.002,.014,.05,W/2+.001,.08,0]]
+ .forEach(c=>shellParts.push(box(c[0],c[1],c[2],crossMat,c[3],c[4],c[5],root,'shell')));
+const domeMat=std(0xf4f4ee,.25,0,{emissive:0});{const dome=new THREE.Mesh(new THREE.SphereGeometry(.009,24,12,0,Math.PI*2,0,Math.PI/2),domeMat);dome.rotation.x=Math.PI/2;dome.position.set(0,.083,FZ);root.add(dome);tag(dome,'radar');cyl(.0105,.002,std(0xe6e6e0,.4),0,.083,FZ+.001,'z',root,'radar',28)}
+const ledMat=std(0x1a5a2a,.3,0,{emissive:0x0b3a16});const led=new THREE.Mesh(new THREE.SphereGeometry(.004,14,10),ledMat);led.position.set(0,.115,FZ+.001);root.add(led);tag(led,'status');
+
+/* drawers */
+const DCOL=[0xd9a22b,0xd0652a,0x2b4a9a],drawerMats=DCOL.map(c=>std(c,.4)),drawers=[];
+const ANG=XD.map(x=>Math.asin(x/.095));
+XD.forEach((x,i)=>{const g=new THREE.Group();root.add(g);
+ box(DW-.002,DH-.002,.006,drawerMats[i],x,DY+DH/2,FZ-.003,g,'drawers');box(.024,.004,.005,black,x,DY+DH-.01,FZ+.002,g,'drawers');
+ box(.054,.002,.062,petg,x,.016,.053,g,'drawers');[-1,1].forEach(s=>box(.002,.034,.062,petg,x+s*.027,.032,.053,g,'drawers'));box(.054,.034,.002,petg,x,.032,.022,g,'drawers');
+ const rk=new THREE.Group();g.add(rk);box(.005,.005,.105,petg,x,.0095,-.0125,rk);for(let t=0;t<20;t++)box(.002,.004,.0025,petg,x+.0033,.0095,-.062+t*.0052,rk);tag(rk,'rack');
+ const pin=new THREE.Group();pin.position.set(x+.01,.0095,-.015);root.add(pin);cyl(.0075,.005,std(0xf2f2f2,.5),0,0,0,null,pin);box(.004,.0052,.002,black,.005,0,0,pin);tag(pin,'rack');
+ box(.012,.022,.023,srvBlue,x+.012,.024,-.015,root,'drawerServo');box(.012,.002,.032,srvBlue,x+.012,.03,-.015,root,'drawerServo');
+ const lc=std(0x1d2126,.5,0,{emissive:0}),lo=std(0x1d2126,.5,0,{emissive:0});
+ box(.006,.006,.012,lc,x-.008,.008,-.06,root,'limit');box(.006,.006,.012,lo,x-.008,.008,-.02,root,'limit');
+ const beam=new THREE.Mesh(new THREE.BoxGeometry(DW,.0008,.0008),new THREE.MeshBasicMaterial({color:0xff2a2a,transparent:true,opacity:0}));beam.position.set(x,DY+DH-.004,FZ-.006);root.add(beam);
+ [-1,1].forEach(s=>box(.003,.004,.004,black,x+s*(DW/2-.002),DY+DH-.004,FZ-.006,root,'pinch'));
+ const hiMat=new THREE.MeshBasicMaterial({color:0x4ee38a,transparent:true,opacity:0,depthWrite:false});box(.05,.03,.058,hiMat,x,.032,.053,g);
+ drawers.push({g,x,pin,lc,lo,beam,hiMat,pills:[]})});
+
+/* shelf, tubes, discs, steppers */
+box(W-2*T,.003,.062,mica,0,.0885,-.053,root,'shelf');
+const TX=[-.03,.03],TZ=-.052,TCOL=[0xd9545e,0x3f9a6a],NAMES=['A','B'],tubes=[];
+const lab=t=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#fff';x.font='800 46px sans-serif';x.textAlign='center';x.fillText(t,32,48);const tx=new THREE.CanvasTexture(c);tx.encoding=THREE.sRGBEncoding;return tx};
+TX.forEach((x,i)=>{const tg=new THREE.Group();root.add(tg);
+ cyl(.016,.04,glass(TCOL[i],.32),x,.115,TZ,null,tg,null,32);cyl(.0168,.006,std(TCOL[i],.4),x,.138,TZ,null,tg,null,32);
+ const lp=new THREE.Mesh(new THREE.PlaneGeometry(.014,.014),new THREE.MeshBasicMaterial({map:lab(NAMES[i]),transparent:true}));lp.rotation.x=-Math.PI/2;lp.position.set(x,.1412,TZ);tg.add(lp);
+ const pm=std(TCOL[i],.35),pl=[];for(let p=0;p<12;p++){const s=new THREE.Mesh(new THREE.SphereGeometry(.0035,10,8),pm);s.scale.set(1.6,.8,1);s.position.set(x+Math.cos(p*2.4)*.008*(p%3)/2,.1+Math.floor(p/4)*.005,TZ+Math.sin(p*2.4)*.008*(p%3)/2);s.rotation.y=p;tg.add(s);pl.push(s)}
+ tag(tg,'tubes');
+ const dg=new THREE.Group();dg.position.set(x,.093,TZ);root.add(dg);cyl(.016,.006,std(0x3a3f45,.5),0,0,0,null,dg,null,32);
+ for(let h=0;h<6;h++){const a=h*Math.PI/3;cyl(.0035,.0062,std(0xbfc6cc,.4),Math.cos(a)*.0105,0,Math.sin(a)*.0105,null,dg,null,12)}tag(dg,'disc');
+ const sm=new THREE.Group();sm.position.set(x,.08,TZ-.006);root.add(sm);cyl(.014,.017,silver,0,0,0,null,sm,null,28);cyl(.0145,.004,std(0x2f6fd6,.5),0,-.009,0,null,sm,null,28);box(.017,.006,.008,std(0x2f6fd6,.5),0,-.004,-.017,sm);tag(sm,'stepper');
+ const u=new THREE.Group();root.add(u);box(.022,.02,.002,pcbG,x,.11,-D/2+T+.001,u);box(.008,.01,.004,black,x,.112,-D/2+T+.004,u);[0,1,2,3].forEach(k=>cyl(.0012,.001,std(0xff3030,.4,0,{emissive:0x400000}),x-.006+k*.004,.102,-D/2+T+.003,'z',u,null,8));tag(u,'uln');
+ tubes.push({x,dg,pl,n:0})});
+
+/* gutter, funnel, IR counter, chute + servo */
+const gMat=glass(0xbfc9d0,.55);[-1,1].forEach(s=>{const m=box(.042,.002,.012,gMat,s*.021,.072,-.03,root,'funnel');m.rotation.z=s*.09});
+cyl(.018,.01,gMat,0,.066,-.03,null,root,'funnel',28,.006);P.funnel.meshes.at(-1).material=new THREE.MeshStandardMaterial({color:0xbfc9d0,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false});
+[-1,1].forEach(s=>box(.005,.006,.006,black,s*.012,.06,-.03,root,'irc'));
+const irBeam=new THREE.Mesh(new THREE.BoxGeometry(.02,.0008,.0008),new THREE.MeshBasicMaterial({color:0xff2a2a,transparent:true,opacity:.25}));irBeam.position.set(0,.06,-.03);root.add(irBeam);
+const chute=new THREE.Group();chute.position.set(0,.063,-.03);root.add(chute);const ct=new THREE.Group();ct.rotation.x=.075;chute.add(ct);
+const cMat=glass(0xa9b6c0,.7);box(.012,.0015,.095,cMat,0,-.002,.0475,ct);[-1,1].forEach(s=>box(.0015,.007,.095,cMat,s*.006,.0015,.0475,ct));tag(chute,'chute');
+box(.012,.023,.022,srvBlue,0,.045,-.03,root,'chuteServo');box(.032,.002,.012,srvBlue,0,.052,-.03,root,'chuteServo');cyl(.003,.006,std(0xf2f2f2,.5),0,.059,-.03,null,root,'chuteServo',10);
+
+/* infrared sensor, electronics */
+const rg=new THREE.Group();root.add(rg);box(.032,.024,.002,pcbG,0,.083,FZ-T-.001,rg);cyl(.003,.004,std(0xff8a1a,.4),-.011,.075,FZ-T-.004,'z',rg,null,10);cyl(.003,.004,std(0xff8a1a,.4),.011,.075,FZ-T-.004,'z',rg,null,10);tag(rg,'radar');
+const zoneMat=new THREE.MeshBasicMaterial({color:0x2fc46b,transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide});
+const zone=new THREE.Mesh(new THREE.ConeGeometry(.045,.14,32,1,true),zoneMat);zone.rotation.x=-Math.PI/2;zone.position.set(0,.083,FZ+.07);root.add(zone);
+const BW=-D/2+T;
+/* demo hand: fingertip of the index finger sits at the group origin, fingers point to -z, palm down */
+const skin=std(0xe2b08c,.62),hand=new THREE.Group();root.add(hand);hand.visible=false;
+function finger(r,l,x,y,z,rx,par=hand){const g=new THREE.Group();g.position.set(x,y,z);g.rotation.x=rx;par.add(g);cyl(r,l,skin,0,0,-l/2,'z',g,null,16);const t=new THREE.Mesh(new THREE.SphereGeometry(r,16,10),skin);t.position.z=-l;t.castShadow=true;g.add(t);return g}
+finger(.0085,.07,0,0,.0785,0);
+[[.02,.0088],[.039,.0084],[.056,.0075]].forEach(([x,r])=>{const k=finger(r,.022,x,-.002,.0785,-.35);finger(r*.95,.02,0,0,-.022,-1.5,k)});
+{const tp=new THREE.Group();tp.position.set(-.012,-.006,.115);tp.rotation.y=.55;hand.add(tp);finger(.0105,.045,0,0,0,-.2,tp)}
+const palm=box(.078,.026,.09,skin,.027,-.002,.123,hand);
+[[-.012,.123],[.066,.123]].forEach(([x,z])=>cyl(.013,.09,skin,x,-.002,z,'z',hand,null,16));
+const arm=cyl(.03,.22,skin,.027,-.004,.27,'z',hand,null,24,.034);arm.scale.set(1,1,.8);
+tag(hand,'hand');
+const HAND_HOME=V(0,.1,FZ+.42),TOUCH=V(0,.083,FZ+.0105);hand.position.copy(HAND_HOME);
+const esp=new THREE.Group();root.add(esp);box(.028,.045,.002,pcbK,.1,.035,BW+.002,esp);box(.018,.02,.003,silver,.1,.04,BW+.004,esp);box(.009,.004,.004,silver,.1,.014,BW+.004,esp);tag(esp,'esp');
+const rtc=new THREE.Group();root.add(rtc);box(.022,.016,.002,pcbB,.1,.07,BW+.001,rtc);cyl(.006,.002,silver,.1,.07,BW+.003,'z',rtc);tag(rtc,'rtc');
+cyl(.007,.007,black,.07,.022,BW+.004,'z',root,'buzzer',20);
+const chg=new THREE.Group();root.add(chg);box(.026,.02,.002,pcbB,-.1,.035,BW+.001,chg);box(.008,.008,.004,black,-.1,.038,BW+.004,chg);tag(chg,'charger');
+const bt=new THREE.Group();root.add(bt);box(.15,.01,.022,black,0,.006,-.077,bt);[-.035,.035].forEach(x=>{cyl(.009,.065,std(0x2d7fd0,.45),x,.014,-.077,'x',bt,null,20);cyl(.0091,.004,silver,x+.034,.014,-.077,'x',bt,null,20)});tag(bt,'batt');
+box(.004,.004,.009,silver,W/2-.001,.03,-.05,root,'usbc');box(.006,.008,.014,black,W/2-T-.004,.03,-.05,root,'usbc');
+
+/* wiring */
+const curves={};
+function cable(id,pts,cols,r=.0007){cols=[].concat(cols);cols.forEach((c,ci)=>{const o=(ci-(cols.length-1)/2)*r*2.2;
+ const cu=new THREE.CatmullRomCurve3(pts.map(p=>V(p[0]+o,p[1]+o*.5,p[2])));if(!curves[id])curves[id]=cu;
+ const m=new THREE.Mesh(new THREE.TubeGeometry(cu,60,r,5),std(c,.55));root.add(m);tag(m,'wiring')})}
+const RB=[0xd23a32,0x24282c],SIG=[0xf08a24,0xd23a32,0x6b4a2b];
+TX.forEach((x,i)=>{cable('uln'+i,[[.1,.058,BW+.003],[.112,.09,BW+.003],[.1,.1,BW+.003],[x+.011,.104,BW+.003]],[0xf3d23c,0x2d6ad8]);
+ cable('mot'+i,[[x,.1,BW+.004],[x+.005,.092,-.075],[x+.008,.084,-.07],[x,.08,TZ-.024]],[0x2d6ad8,0xe86aa3,0xf3d23c,0xf08a24,0xd23a32])});
+XD.forEach((x,i)=>cable('srv'+i,[[.095,.015,BW+.003],[.07,.006,-.07],[x+.02,.006,-.04],[x+.012,.016,-.027]],SIG));
+cable('div',[[.093,.02,BW+.003],[.05,.03,-.06],[.008,.04,-.042]],SIG);
+cable('irc',[[.1,.05,BW+.003],[.05,.064,-.05],[.015,.06,-.03]],[0xf3d23c,0x24282c,0xd23a32]);
+cable('radar',[[.112,.055,BW+.003],[.118,.075,0],[.06,.09,.075],[.005,.084,FZ-T-.003]],[0xd23a32,0x24282c,0xf3d23c,0x2d6ad8]);
+cable('rtc',[[.1,.062,BW+.003],[.1,.058,BW+.003]],[0x2d6ad8,0xf3d23c]);
+cable('led',[[.105,.06,BW+.003],[.09,.12,-.04],[.02,.125,.07],[0,.116,FZ-T-.002]],RB);
+cable('usb',[[W/2-T-.006,.03,-.05],[.11,.008,-.07],[-.06,.004,-.088],[-.1,.025,BW+.003]],RB,.0009);
+cable('bat',[[-.1,.026,BW+.003],[-.085,.012,-.075],[-.07,.014,-.077]],RB,.0009);
+cable('pwr',[[-.087,.035,BW+.003],[0,.06,BW+.003],[.086,.035,BW+.003]],RB,.0009);
+
+/* see-through */
+let see=0,seeOn=false,lastTr=false;const fadeMats=[shellMat,crossMat,...drawerMats];
+function applySee(s){see=s;const tr=s>.001;
+ if(tr!==lastTr){fadeMats.forEach(m=>{m.transparent=tr;m.needsUpdate=true});lastTr=tr}
+ shellMat.opacity=crossMat.opacity=1-s;shellMat.depthWrite=s<.3;drawerMats.forEach(m=>{m.opacity=1-.6*s;m.depthWrite=s<.3});edgeMat.opacity=.55*s;
+ shellParts.forEach(m=>{m.visible=s<.98;m.castShadow=s<.5});extras.forEach(m=>m.visible=s<.5)}
+applySee(0);
+
+/* animation engine */
+const anims=[];let now=performance.now()/1000;
+const ease=e=>e<.5?2*e*e:1-((-2*e+2)**2)/2,lin=e=>e;
+const tween=(dur,fn,ez=ease)=>new Promise(res=>anims.push({t0:now,dur,fn,ez,res}));
+const wait=d=>tween(d,()=>{});
+const pg=new THREE.SphereGeometry(.0022,10,8);
+function pulse(id,dur=.7,col=0x38d6ff,rev=false){const c=curves[id];const m=new THREE.Mesh(pg,new THREE.MeshBasicMaterial({color:col}));
+ const h=new THREE.Mesh(pg,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.35,depthWrite:false}));h.scale.setScalar(2.4);m.add(h);root.add(m);
+ return tween(dur,(e,p)=>m.position.copy(c.getPointAt(rev?1-p:p)),lin).then(()=>root.remove(m))}
+const train=(id,n,gap,dur,col,rev)=>Promise.all(Array.from({length:n},(_,k)=>wait(k*gap).then(()=>pulse(id,dur,col,rev))));
+const rgeo=new THREE.RingGeometry(.006,.0075,40);
+function waves(pos,face,col=0xff5a4e,n=3,size=4){return Promise.all(Array.from({length:n},(_,k)=>wait(k*.35).then(()=>{const m=new THREE.Mesh(rgeo,new THREE.MeshBasicMaterial({color:col,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+ m.position.copy(pos);if(face==='up')m.rotation.x=-Math.PI/2;root.add(m);return tween(1,(e,p)=>{m.scale.setScalar(1+p*size);m.material.opacity=.85*(1-p)},lin).then(()=>root.remove(m))})))}
+const glow=(mat,hex)=>mat.emissive.setHex(hex);
+const setDrawer=(d,z)=>{d.g.position.z=z;d.pin.rotation.y=-z/.0075};
+function dropPill(t,di){const tb=tubes[t];if(tb.n>=tb.pl.length){tb.pl.forEach(q=>q.visible=true);tb.n=0}const src=tb.pl[tb.pl.length-1-tb.n];if(src)src.visible=false;tb.n++;
+ const m=new THREE.Mesh(src.geometry,src.material);m.scale.copy(src.scale);root.add(m);
+ const a=ANG[di],ex=.095*Math.sin(a),ez=-.03+.095*Math.cos(a),jx=(Math.random()-.5)*.016,jz=(Math.random()-.5)*.02;
+ const path=new THREE.CurvePath();const pts=[V(tb.x,.087,TZ+.012),V(tb.x,.074,-.03),V(0,.07,-.03),V(0,.06,-.03),V(ex,.056,ez),V(ex+jx,.02,ez+jz)];
+ for(let k=0;k<pts.length-1;k++)path.add(new THREE.LineCurve3(pts[k],pts[k+1]));
+ let flashed=false;
+ return tween(1.3,(e,p)=>{m.position.copy(path.getPointAt(p));m.rotation.y+=.2;if(!flashed&&m.position.y<.061&&Math.abs(m.position.x)<.01){flashed=true;tween(.35,(e2,q)=>irBeam.material.opacity=1-.75*q,lin)}},e=>e*e*.4+e*.6)
+  .then(()=>{root.remove(m);const d=drawers[di];m.position.set(ex+jx,.02,ez+jz);d.g.add(m);d.pills.push(m)})}
+
+/* UI */
+const DOSES=[{n:'Morning',t:'07:00',tubes:[0]},{n:'Noon',t:'12:00',tubes:[0,1]},{n:'Evening',t:'19:00',tubes:[1]}];
+const STEPS=[['Dose time','The DS3231 clock wakes the ESP32. Buzzer beeps, the LED blinks and the Pill Box app sends a phone notification.'],
+ ['Aim the chute','The diverter servo swings the chute toward the right drawer.'],
+ ['Dispense pills','Each stepper turns its disc 60° and one pill drops; the IR beam under the funnel counts it.'],
+ ['Sensor on','The infrared sensor switches on and the LED turns green: the dose is ready.'],
+ ['Hand detected','A hand comes up to the infrared sensor and it triggers.'],
+ ['Drawer opens','The drawer servo turns its pinion; the rack pushes the drawer out to the open limit switch.'],
+ ['Pills taken','The user takes the pills from the drawer.'],
+ ['Close and log','The drawer closes slowly with the anti-pinch beam on, then the dose is logged as taken.']];
+$('#steps').innerHTML=STEPS.map(s=>`<li>${s[0]}</li>`).join('');
+const lis=[...document.querySelectorAll('#steps li')];
+function step(i,extra=''){lis.forEach((l,k)=>{l.className=k===i?'on':k<i?'done':''});const c=$('#cap');if(i<0){c.hidden=true;return}c.hidden=false;$('#capT').textContent=`${i+1}. ${STEPS[i][0]}${extra}`;$('#capD').textContent=STEPS[i][1]}
+const DCN=['#d9a22b','#d0652a','#2b4a9a'],DNAME=['yellow','orange','blue'],pDose=['Upcoming','Upcoming','Upcoming'];
+function renderPhone(){$('#pDoses').innerHTML=DOSES.map((d,i)=>`<div class="pd"><i style="background:${DCN[i]}"></i><span><b>${d.n}</b> ${d.t}</span><em class="${pDose[i].startsWith('Taken')?'ok':pDose[i]==='Due now'?'due':''}">${pDose[i]}</em></div>`).join('');
+ $('#pStock').innerHTML=tubes.map((t,i)=>`<span>Tube ${NAMES[i]}<br><b>${t.pl.length-t.n}</b> left</span>`).join('')}
+function pStatus(t,sub,tone){$('#pStat').className='pstat '+tone;$('#pStatT').textContent=t;$('#pStatS').textContent=sub}
+function pNotif(t,body,acts=[]){const e=$('#pNotif');if(!t){e.classList.remove('on');return}$('#pNT').textContent=t;$('#pNB').textContent=body;$('#pNA').innerHTML=acts.map(a=>`<span>${a}</span>`).join('');e.classList.remove('on');void e.offsetWidth;e.classList.add('on')}
+const pTime=t=>$('#pTime').textContent=t;
+const phBtn=$('#ph');function split(on){stage.classList.toggle('split',on);phBtn.setAttribute('aria-pressed',on)}
+phBtn.onclick=()=>split(!stage.classList.contains('split'));
+renderPhone();
+const side=$('#side'),phoneEl=$('#phone');
+new ResizeObserver(()=>{const sc=Math.min(1,(side.clientHeight-20)/510,(side.clientWidth-16)/252);phoneEl.style.transform=`translate(-50%,-50%) scale(${Math.max(.3,sc)})`}).observe(side);
+const groups=['Electronics','Power','Mechanics','Body','Demo'];
+$('#parts').innerHTML=groups.map(g=>`<div class="grp">${g}</div>`+order.filter(k=>P[k].grp===g).map(k=>`<button data-k="${k}"><span>${P[k].name}</span><em>${P[k].qty>1?'×'+P[k].qty:''}</em></button>`).join('')).join('');
+const showBtn=$('#show'),opBtn=$('#op');
+function setSee(on){if(on===seeOn)return;seeOn=on;showBtn.setAttribute('aria-pressed',on);showBtn.textContent=on?'Solid view':'Showcase';const a=see;return tween(.9,e=>applySee(a+((on?1:0)-a)*e))}
+showBtn.onclick=()=>setSee(!seeOn);
+let sel=0,running=false;document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{if(running)return;sel=+b.dataset.d;document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+
+let helper=null,hlTimer=0;
+function highlight(k){const p=P[k];if(!p)return;document.querySelectorAll('.parts button').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));
+ $('#info').innerHTML=`<b>${p.name}${p.qty>1?' ×'+p.qty:''}</b><br>${p.desc}`;
+ if(!['shell','drawers','status','usbc','radar','hand'].includes(k))setSee(true);
+ if(k==='hand'&&!hand.visible){$('#info').innerHTML+=' Press Operate to see it.';return}
+ if(helper){scene.remove(helper);helper=null}
+ root.updateMatrixWorld(true);const bx=new THREE.Box3();p.meshes.forEach(m=>bx.expandByObject(m));bx.expandByScalar(.003);
+ helper=new THREE.Box3Helper(bx,0xd7261e);helper.material.transparent=true;helper.material.depthTest=false;helper.renderOrder=9;scene.add(helper);hlTimer=now}
+$('#parts').onclick=e=>{const b=e.target.closest('button');if(b)highlight(b.dataset.k)};
+
+const lerpV=(a,b,e)=>V(a.x+(b.x-a.x)*e,a.y+(b.y-a.y)*e,a.z+(b.z-a.z)*e);
+function moveHand(to,rx,dur){const a=hand.position.clone(),r0=hand.rotation.x;return tween(dur,e=>{hand.position.copy(lerpV(a,to,e));hand.rotation.x=r0+(rx-r0)*e})}
+async function operate(){if(running)return;running=true;opBtn.disabled=true;opBtn.textContent='Running…';
+ const di=sel,dose=DOSES[di],d=drawers[di],np=dose.tubes.length;
+ d.pills.forEach(m=>d.g.remove(m));d.pills=[];
+ if(!seeOn)await setSee(true);
+ const dn=dose.n.toLowerCase(),pills=`${np} pill${np>1?'s':''}`,tt=dose.t.slice(0,3)+'0'+(di+2);
+ split(true);pTime(dose.t);pDose[di]='Due now';renderPhone();
+ step(0);pNotif('Pill Box · now',`Time for your ${dn} medicine. ${pills} are being prepared for the ${DNAME[di]} drawer.`,['I\'ll take it now','Remind me in 10 min']);
+ pStatus(`${dose.n} dose due`,'Preparing your pills…','alert');
+ const blink=tween(2.4,(e,p)=>glow(ledMat,Math.sin(p*Math.PI*8)>0?0x9a6a00:0x000000),lin);
+ await Promise.all([train('rtc',3,.3,.4),waves(V(.07,.022,BW+.01),'front'),waves(V(.1,.05,BW+.01),'front',0x38d6ff,3,6),blink]);
+ step(1);const a0=chute.rotation.y,a1=ANG[di];
+ await Promise.all([pulse('div',.6),wait(.3).then(()=>tween(1,e=>chute.rotation.y=a0+(a1-a0)*e))]);
+ for(let k=0;k<np;k++){const t=dose.tubes[k];step(2,` · ${k+1}/${np}`);pStatus('Preparing pills',`Dropping pill ${k+1} of ${np}`,'alert');
+  await Promise.all([pulse('uln'+t,.4),wait(.25).then(()=>pulse('mot'+t,.4,0xffc94a))]);
+  const dg=tubes[t].dg,r0=dg.rotation.y;await Promise.all([tween(.5,e=>dg.rotation.y=r0+e*Math.PI/3),wait(.35).then(()=>dropPill(t,di))]);
+  await pulse('irc',.4,0x7dff9a,true);renderPhone()}
+ step(3);pNotif('Pill Box · now',`Your ${pills} are ready. Walk up to the box and reach toward the sensor.`,['OK']);pStatus('Pills ready',`Reach toward the sensor to open the ${DNAME[di]} drawer`,'ok');glow(ledMat,0x22d36a);await pulse('radar',.6);glow(domeMat,0x3a2a00);await tween(.6,e=>zoneMat.opacity=.12*e);
+ step(4);hand.position.copy(HAND_HOME);hand.rotation.x=0;hand.visible=true;
+ await moveHand(TOUCH,0,1.8);
+ glow(domeMat,0x1f9a4a);pStatus('Hand detected','Opening the drawer…','ok');pNotif('');await Promise.all([tween(.9,(e,p)=>zoneMat.opacity=.12+.2*Math.sin(p*Math.PI),lin),waves(V(0,.083,FZ+.012),'front',0x2fc46b,3,5),pulse('radar',.6,0x7dff9a,true)]);
+ step(5);await pulse('srv'+di,.5);
+ await Promise.all([tween(2,e=>setDrawer(d,e*.045)),moveHand(V(d.x,.11,FZ+.13),-.25,1.4)]);glow(d.lo,0x1d8f3a);glow(domeMat,0);zoneMat.opacity=0;
+ await tween(.5,e=>d.hiMat.opacity=.3*e);
+ pStatus('Drawer open','Take your pills. It closes by itself.','ok');
+ step(6);await moveHand(V(d.x,.036,.095),-.75,1.2);
+ await Promise.all([tween(.7,e=>d.pills.forEach(m=>{m.position.y=.02+e*.012;m.scale.setScalar(1-e*.95)})),tween(.7,e=>d.hiMat.opacity=.3*(1-e))]);
+ d.pills.forEach(m=>d.g.remove(m));d.pills=[];glow(d.lo,0);
+ await moveHand(HAND_HOME,0,1.4);hand.visible=false;
+ step(7);d.beam.material.opacity=.9;
+ await tween(3,e=>setDrawer(d,(1-e)*.045),lin);d.beam.material.opacity=0;glow(d.lc,0x1d8f3a);
+ pTime(tt);pDose[di]=`Taken ${tt}`;renderPhone();pStatus('Dose taken',`${dose.n} · ${tt} · family notified`,'ok');
+ pNotif('Pill Box · family update',`Your family was told: ${dn} dose taken at ${tt}.`);
+ await waves(V(.1,.05,BW+.01),'front',0x38d6ff,3,6);await wait(1.4);
+ glow(d.lc,0);glow(ledMat,0x0b3a16);step(-1);lis.forEach(l=>l.className='');pNotif('');
+ running=false;opBtn.disabled=false;opBtn.textContent='Operate'}
+opBtn.onclick=operate;
+
+/* camera orbit + picking */
+const tgt=V(0,.06,0);let th=.6,ph=1.1,rad=.8;
+const homeRad=()=>cam.aspect<.85?1.15:.8;
+function upd(){ph=Math.max(.15,Math.min(1.53,ph));rad=Math.max(.22,Math.min(1.8,rad));
+ cam.position.set(tgt.x+rad*Math.sin(ph)*Math.sin(th),tgt.y+rad*Math.cos(ph),tgt.z+rad*Math.sin(ph)*Math.cos(th));cam.lookAt(tgt)}
+$('#reset').onclick=()=>{const a=[th,ph,rad],b=[.6,1.1,homeRad()];tween(.8,e=>{th=a[0]+(b[0]-a[0])*e;ph=a[1]+(b[1]-a[1])*e;rad=a[2]+(b[2]-a[2])*e})};
+const zoomBy=f=>{const a=rad,b=Math.max(.22,Math.min(1.8,rad*f));return tween(.35,e=>rad=a+(b-a)*e)};
+$('#zin').onclick=()=>zoomBy(.75);$('#zout').onclick=()=>zoomBy(1.33);
+addEventListener('keydown',e=>{if(e.target.closest('input,textarea'))return;if(e.key==='+'||e.key==='=')zoomBy(.75);if(e.key==='-')zoomBy(1.33)});
+const ptrs=new Map(),tip=$('#tip');let moved=0,pinch=0;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y)}});
+cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p){hover(e);return}
+ const ddx=e.clientX-p.x,ddy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;moved+=Math.abs(ddx)+Math.abs(ddy);
+ if(ptrs.size===1){th-=ddx*.008;ph-=ddy*.008}else if(ptrs.size===2){const [a,b]=[...ptrs.values()];const dd=Math.hypot(a.x-b.x,a.y-b.y);if(pinch)rad*=pinch/dd;pinch=dd}
+ if(moved>6)tip.style.display='none'});
+cv.addEventListener('pointerup',e=>{if(ptrs.has(e.pointerId)&&ptrs.size===1&&moved<6)pick(e,true);ptrs.delete(e.pointerId);pinch=0});
+cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);pinch=0});
+cv.addEventListener('wheel',e=>{e.preventDefault();rad*=1+Math.sign(e.deltaY)*Math.min(.12,Math.abs(e.deltaY)*.0012)},{passive:false});
+cv.addEventListener('pointerleave',()=>tip.style.display='none');
+const ray=new THREE.Raycaster(),mv=new THREE.Vector2(),pickables=[];order.forEach(k=>P[k].meshes.forEach(m=>pickables.push(m)));
+function partAt(e){const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,cam);
+ const hit=ray.intersectObjects(pickables,false).find(h=>{let o=h.object;while(o){if(!o.visible)return false;o=o.parent}return !(see>.5&&h.object.userData.part==='shell')});
+ return {k:hit&&hit.object.userData.part,x:e.clientX-r.left,y:e.clientY-r.top}}
+function showTip(k,x,y){if(!k){tip.style.display='none';return}tip.innerHTML=`<b>${P[k].name}</b>${P[k].desc}`;tip.style.display='block';
+ const sw=view.clientWidth,tw=tip.offsetWidth;tip.style.left=Math.min(x,sw-tw-30)+'px';tip.style.top=y+'px'}
+function pick(e,click){const {k,x,y}=partAt(e);showTip(k,x,y);if(click&&k)highlight(k)}
+let lastHover=0;function hover(e){if(e.pointerType==='touch')return;const t=performance.now();if(t-lastHover<40)return;lastHover=t;pick(e,false)}
+
+const ro=new ResizeObserver(()=>{const w=view.clientWidth,h=view.clientHeight;R.setSize(w,h,false);const was=homeRad();cam.aspect=w/h;cam.updateProjectionMatrix();if(Math.abs(rad-was)<.01)rad=homeRad()});ro.observe(view);
+function loop(){now=performance.now()/1000;
+ for(let i=anims.length-1;i>=0;i--){const a=anims[i];const p=Math.min(1,(now-a.t0)/a.dur);a.fn(a.ez(p),p);if(p>=1){anims.splice(i,1);a.res()}}
+ if(helper){const t=now-hlTimer;helper.material.opacity=t>3?Math.max(0,1-(t-3)):.55+.45*Math.sin(t*6);if(t>4){scene.remove(helper);helper=null}}
+ upd();R.render(scene,cam);requestAnimationFrame(loop)}
+loop();
+}
+</script>
+</body>
+</html>
